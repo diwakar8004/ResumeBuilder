@@ -12,7 +12,7 @@ const ResumeControlBar = ({
   scale,
   setScale,
   documentSize,
-  document,
+  document: pdfDocument,
   fileName,
 }: {
   scale: number;
@@ -26,12 +26,24 @@ const ResumeControlBar = ({
     documentSize,
   });
 
-  const [instance, update] = usePDF({ document });
+  const [instance, update] = usePDF({ document: pdfDocument });
+  const isGenerating = instance.loading || !instance.url;
 
   // Hook to update pdf when document changes
   useEffect(() => {
     update();
-  }, [update, document]);
+  }, [update, pdfDocument]);
+
+  const handleDownload = () => {
+    if (!instance.url) return;
+
+    // Create a temporary anchor to trigger the file download
+    const link = window.document.createElement("a");
+    link.href = instance.url;
+    link.download = fileName;
+    link.rel = "noopener noreferrer";
+    link.click();
+  };
 
   return (
     <div className="sticky bottom-0 left-0 right-0 flex h-[var(--resume-control-bar-height)] items-center justify-center px-[var(--resume-padding)] text-gray-600 dark:text-gray-400 bg-gradient-to-b from-white/80 to-white dark:from-gray-800/80 dark:to-gray-900 backdrop-blur-sm lg:justify-between transition-colors duration-300">
@@ -60,14 +72,17 @@ const ResumeControlBar = ({
           <span className="select-none">Autoscale</span>
         </label>
       </div>
-      <a
-        className="ml-1 flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 lg:ml-8 transition-colors duration-200"
-        href={instance.url!}
-        download={fileName}
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={isGenerating}
+        className="ml-1 flex items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-0.5 lg:ml-8 transition-colors duration-200 disabled:opacity-60 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700"
       >
         <ArrowDownTrayIcon className="h-4 w-4" />
-        <span className="whitespace-nowrap">Download Resume</span>
-      </a>
+        <span className="whitespace-nowrap">
+          {isGenerating ? "Preparing..." : "Download Resume"}
+        </span>
+      </button>
     </div>
   );
 };
